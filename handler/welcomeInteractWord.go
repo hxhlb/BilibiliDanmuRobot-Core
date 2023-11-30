@@ -7,7 +7,6 @@ import (
 	"github.com/xbclub/BilibiliDanmuRobot-Core/logic"
 	"github.com/xbclub/BilibiliDanmuRobot-Core/svc"
 	"github.com/zeromicro/go-zero/core/logx"
-	"golang.org/x/time/rate"
 	"math/rand"
 	"sort"
 	"strings"
@@ -15,21 +14,26 @@ import (
 )
 
 func (w *wsHandler) welcomeInteractWord() {
-	limiter := rate.NewLimiter(1, w.svc.Config.WelcomeTimeLimiter)
+	//limiter := rate.NewLimiter(1, w.svc.Config.WelcomeTimeLimiter)
 	w.client.RegisterCustomEventHandler("INTERACT_WORD", func(s string) {
 		interact := &entity.InteractWordText{}
 		_ = json.Unmarshal([]byte(s), interact)
 		// 1 进场 2 关注 3 分享
-		if interact.Data.MsgType == 1 && limiter.AllowN(time.Now(), w.svc.Config.WelcomeTimeLimiter) {
+		//if interact.Data.MsgType == 1 && limiter.AllowN(time.Now(), w.svc.Config.WelcomeTimeLimiter) {
+		if interact.Data.MsgType == 1 {
 			if v, ok := w.svc.Config.WelcomeString[fmt.Sprint(interact.Data.Uid)]; w.svc.Config.WelcomeSwitch && ok {
-				logic.PushToBulletSender(v)
+				//logic.PushToBulletSender(v)
+				logic.PushToInterractChan(&logic.InterractData{
+					Uid: interact.Data.Uid,
+					Msg: v,
+				})
 			} else if w.svc.Config.InteractWord {
 				// 不在黑名单才欢迎
 				if !inWide(interact.Data.Uname, w.svc.Config.WelcomeBlacklistWide) &&
 					!in(interact.Data.Uname, w.svc.Config.WelcomeBlacklist) {
 					if w.svc.Config.InteractWordByTime {
 						msg := handleInterractByTime(interact.Data.Uid, welcomeInteract(interact.Data.Uname), w.svc)
-						logx.Alert(msg)
+						logx.Debug(msg)
 						logic.PushToInterractChan(&logic.InterractData{
 							Uid: interact.Data.Uid,
 							Msg: msg,
@@ -55,6 +59,9 @@ func (w *wsHandler) welcomeInteractWord() {
 			}
 		} else if interact.Data.MsgType == 2 {
 			if w.svc.Config.InteractWord {
+				if len(interact.Data.Uname) == 0 {
+					return
+				}
 				msg := "感谢 " + shortName(interact.Data.Uname, 8, w.svc.Config.DanmuLen) + " 的关注!"
 				logic.PushToBulletSender(msg)
 				if w.svc.Config.FocusDanmu != nil && len(w.svc.Config.FocusDanmu) > 0 {
@@ -64,6 +71,9 @@ func (w *wsHandler) welcomeInteractWord() {
 			}
 		} else if interact.Data.MsgType == 3 {
 			if w.svc.Config.InteractWord {
+				if len(interact.Data.Uname) == 0 {
+					return
+				}
 				msg := "感谢 " + shortName(interact.Data.Uname, 8, w.svc.Config.DanmuLen) + " 的分享!"
 				logic.PushToBulletSender(msg)
 				if w.svc.Config.FocusDanmu != nil && len(w.svc.Config.FocusDanmu) > 0 {

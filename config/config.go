@@ -44,17 +44,14 @@ type Config struct {
 		Random  bool     `json:",default=false"`
 		Danmu   []string `json:",optional"`
 	} `json:",optional"`
-	FocusDanmu                          []string `json:",optional"`
-	PKNotice                            bool     `json:",default=true"`
-	WelcomeBlacklistWide                []string `json:",optional"`
-	WelcomeBlacklist                    []string `json:",optional"`
-	DrawByLot                           bool     `json:",default=false"`
-	TraditionalToSimplifiedConversion   bool     `json:",default=false"`
-	ForeignLanguageTranslationInChinese struct {
-		Enabled   bool   `json:",default=false"`
-		AppID     string `json:",optional"`
-		SecretKey string `json:",optional"`
-	}
-	WelcomeTimeLimiter int  `json:",default=1"`
-	SignInEnable       bool `json:",default=false"`
+	FocusDanmu           []string `json:",optional"`
+	PKNotice             bool     `json:",default=true"`
+	WelcomeBlacklistWide []string `json:",optional"`
+	WelcomeBlacklist     []string `json:",optional"`
+	DrawByLot            bool     `json:",default=true"`
+	//TraditionalToSimplifiedConversion   bool     `json:",default=false"`
+	//WelcomeTimeLimiter int    `json:",default=1"`
+	SignInEnable bool   `json:",default=true"`
+	DBPath       string `json:",default=./db"`
+	DBName       string `json:",default=sqliteDataBase.db"`
 }

@@ -12,14 +12,15 @@ func (w *wsHandler) receiveDanmu() {
 	//弹幕处理的功能类接口
 	danmuProcessFuncList := createDanmuProcessFuncList(w)
 	w.client.OnDanmaku(func(danmaku *message.Danmaku) {
-		if danmaku.Sender.Uid != w.userId {
+		sender := *danmaku.Sender
+		strContent := danmaku.Content
+		if sender.Uid != w.userId {
 			//移除表情包内容，[]形式
-			strContent := danmaku.Content
 			re := regexp.MustCompile("\\[(.*?)\\]")
 			strContent = re.ReplaceAllString(strContent, "")
 			if len(strContent) > 0 {
 				for _, danmuProcessFunc := range danmuProcessFuncList {
-					danmuProcessFunc.SetDanmu(&strContent, danmaku.Sender)
+					danmuProcessFunc.SetDanmu(strContent, sender)
 					danmuProcessFunc.DoDanmuProcess()
 				}
 			}
@@ -34,29 +35,18 @@ func createDanmuProcessFuncList(w *wsHandler) []danmuProcess.DanmuProcess {
 	danmuProcessClass := new(danmuProcess.DanmuProcessClass)
 	var danmuProcessFuncList []danmuProcess.DanmuProcess
 	//判断启用机器人聊天
-	if w.svc.Config.FuzzyMatchCmd {
-		gptClass := danmuProcessClass.GptClass.Create()
-		gptClass.SetConfig(w.svc)
-		danmuProcessFuncList = append(danmuProcessFuncList, gptClass)
-	}
+	//if w.svc.Config.FuzzyMatchCmd {
+	gptClass := danmuProcessClass.GptClass.Create()
+	gptClass.SetConfig(w.svc)
+	danmuProcessFuncList = append(danmuProcessFuncList, gptClass)
+	//}
 	//判断启用机器人抽签
 	if w.svc.Config.DrawByLot {
 		drawByLotClass := danmuProcessClass.DrawByLotClass.Create()
 		drawByLotClass.SetConfig(w.svc)
 		danmuProcessFuncList = append(danmuProcessFuncList, drawByLotClass)
 	}
-	//判断启用繁简转换
-	if w.svc.Config.TraditionalToSimplifiedConversion {
-		traditionalToSimplifiedConversionClass := danmuProcessClass.TraditionalToSimplifiedConversionClass.Create()
-		traditionalToSimplifiedConversionClass.SetConfig(w.svc)
-		danmuProcessFuncList = append(danmuProcessFuncList, traditionalToSimplifiedConversionClass)
-	}
-	//判断启用翻译功能
-	if w.svc.Config.ForeignLanguageTranslationInChinese.Enabled {
-		foreignLanguageTranslationInChineseClass := danmuProcessClass.ForeignLanguageTranslationInChineseClass.Create()
-		foreignLanguageTranslationInChineseClass.SetConfig(w.svc)
-		danmuProcessFuncList = append(danmuProcessFuncList, foreignLanguageTranslationInChineseClass)
-	}
+	// 签到
 	if w.svc.Config.SignInEnable {
 		signInClass := danmuProcessClass.SignInClass.Create()
 		signInClass.SetConfig(w.svc)

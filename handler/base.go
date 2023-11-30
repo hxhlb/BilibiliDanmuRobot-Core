@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/Akegarasu/blivedm-go/client"
 	_ "github.com/Akegarasu/blivedm-go/utils"
+	_ "github.com/glebarez/go-sqlite"
 	"github.com/robfig/cron/v3"
 	"github.com/xbclub/BilibiliDanmuRobot-Core/config"
 	"github.com/xbclub/BilibiliDanmuRobot-Core/entity"
@@ -53,13 +54,23 @@ func NewWsHandler() WsHandler {
 			panic(fmt.Sprintf("无法创建token文件夹 请手动创建:%s", err))
 		}
 	}
+
 	var c config.Config
 	conf.MustLoad("etc/bilidanmaku-api.yaml", &c, conf.UseEnv())
 	logx.MustSetup(c.Log)
 	logx.DisableStat()
+	//配置数据库文件夹
+	info, err := os.Stat(c.DBPath)
+	if os.IsNotExist(err) || !info.IsDir() {
+		err = os.MkdirAll(c.DBPath, 0777)
+		if err != nil {
+			logx.Errorf("文件夹创建失败：%s", c.DBPath)
+			return nil
+		}
+	}
 	ctx := svc.NewServiceContext(c)
 	ws := new(wsHandler)
-	err := ws.starthttp()
+	err = ws.starthttp()
 	if err != nil {
 		return nil
 	}
@@ -79,9 +90,7 @@ func NewWsHandler() WsHandler {
 		return nil
 	}
 	ws.userId, err = strconv.Atoi(strUserId)
-	if err != nil {
-		return nil
-	}
+
 	return ws
 }
 
@@ -122,6 +131,7 @@ func (w *wsHandler) StopWsClient() {
 	}
 	w.corndanmu.Stop()
 	w.client.Stop()
+	//w.svc.Db.Db.Close()
 }
 func (w *wsHandler) startLogic() {
 	w.sendBulletCtx, w.sendBulletCancel = context.WithCancel(context.Background())
